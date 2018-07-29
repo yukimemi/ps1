@@ -1,3 +1,5 @@
+@set scriptPath=%~f0&@powershell -NoProfile -ExecutionPolicy ByPass -InputFormat None "$s=[scriptblock]::create((gc \"%~f0\"|?{$_.readcount -gt 2})-join\"`n\");&$s" %*
+@exit /b %errorlevel%
 <#
 .SYNOPSIS
   ˆÃ†‰»/•œ†
@@ -112,4 +114,3 @@ try {
   Write-Host "[crypto.ps1] Error $_"
   exit 1
 }
-
