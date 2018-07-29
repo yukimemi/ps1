@@ -1,11 +1,11 @@
-@set scriptPath=%~f0&@powershell -NoProfile -ExecutionPolicy ByPass -InputFormat None "$s=[scriptblock]::create((gc \"%~f0\"|?{$_.readcount -gt 2})-join\"`n\");&$s" %*
+@set __SCRIPTPATH=%~f0&@powershell -NoProfile -ExecutionPolicy ByPass -InputFormat None "$s=[scriptblock]::create((gc \"%~f0\"|?{$_.readcount -gt 2})-join\"`n\");&$s" %*
 @exit /b %errorlevel%
 <#
 .SYNOPSIS
   暗号化/復号
 .DESCRIPTION
   暗号化 (Encrypt-Plain)、復号 (Decrypt-Secure) の2関数を提供する
-.Last Change : 2018/07/30 01:19:17.
+.Last Change : 2018/07/30 02:05:44.
 #>
 param(
   # 暗号化モードで動作
@@ -92,7 +92,7 @@ function Decrypt-Secure {
 
 
 # cmd 形式の時以外では処理終了
-if ([string]::IsNullOrEmpty($env:scriptPath)) {
+if ([string]::IsNullOrEmpty($env:__SCRIPTPATH)) {
   exit 0
 }
 
