@@ -3,7 +3,7 @@
   ˆÃ†‰»/•œ†
 .DESCRIPTION
   ˆÃ†‰» (Encrypt-Plain)A•œ† (Decrypt-Secure) ‚Ì2ŠÖ”‚ğ’ñ‹Ÿ‚·‚é
-.Last Change : 2018/07/30 02:05:44.
+.Last Change : 2018/07/30 08:04:10.
 #>
 param(
   # ˆÃ†‰»ƒ‚[ƒh‚Å“®ì

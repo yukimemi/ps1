@@ -3,7 +3,7 @@
   BitLocker化 (パスワード)
 .DESCRIPTION
   パスワード方式でドライブをBitLocker化する
-.Last Change : 2018/07/30 03:23:27.
+.Last Change : 2018/07/30 08:04:37.
 #>
 param(
   # ドライブ

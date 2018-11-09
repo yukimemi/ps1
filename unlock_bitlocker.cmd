@@ -5,7 +5,7 @@
   BitLocker 解除 (パスワード)
 .DESCRIPTION
   パスワード方式でBitLocker を解除する
-.Last Change : 2018/07/30 03:22:31.
+.Last Change : 2018/07/30 08:04:56.
 #>
 param(
   # ドライブ
