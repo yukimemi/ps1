@@ -3,7 +3,7 @@
   暗号化/復号
 .DESCRIPTION
   暗号化 (Encrypt-Plain)、復号 (Decrypt-Secure) の2関数を提供する
-.Last Change : 2018/07/30 08:04:10.
+.Last Change : 2018/11/09 17:15:06.
 #>
 param(
   # 暗号化モードで動作
@@ -90,7 +90,7 @@ function Decrypt-Secure {
 
 
 # cmd 形式の時以外では処理終了
-if ([string]::IsNullOrEmpty($env:__SCRIPTPATH)) {
+if (![string]::IsNullOrEmpty($script:MyInvocation.MyCommand.Path)) {
   exit 0
 }
 
