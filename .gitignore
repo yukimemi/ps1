@@ -1,1 +1,4 @@
 *.enc
+*.log
+cmd/
+data/
