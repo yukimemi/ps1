@@ -1,0 +1,4 @@
+{
+  "recursive": false,
+  "rename_format": "{yyyymmdd}/{yyyymmdd}_{hhmissfff}.{ext}"
+}

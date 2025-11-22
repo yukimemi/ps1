@@ -1,5 +1,12 @@
 root = true
 
+[*.ps1]
+charset = utf-8
+end_of_line = crlf
+indent_size = 2
+indent_style = space
+insert_final_newline = true
+
 [*.cmd]
 end_of_line = crlf
 insert_final_newline = true
