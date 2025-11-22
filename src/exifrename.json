@@ -1,4 +1,5 @@
 {
   "recursive": false,
-  "rename_format": "{yyyymmdd}/{yyyymmdd}_{hhmissfff}.{ext}"
+  "rename_format": "{yyyymmdd}/{yyyymmdd}_{hhmissfff}.{ext}",
+  "sequential_format": "_{index}"
 }

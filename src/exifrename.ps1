@@ -203,6 +203,29 @@ function Start-Main {
 
       $destPath = [System.IO.Path]::Combine($out_dir, $newName)
 
+      # Handle file collisions with sequential numbering
+      if (Test-Path $destPath) {
+        if ($app.cfg.sequential_format) {
+          $index = 1
+          $dirName = [System.IO.Path]::GetDirectoryName($destPath)
+          $fileNameWithoutExt = [System.IO.Path]::GetFileNameWithoutExtension($destPath)
+          $extension = [System.IO.Path]::GetExtension($destPath)
+          while ($true) {
+            $sequentialPart = $app.cfg.sequential_format.Replace("{index}", $index)
+            $newFileName = "$fileNameWithoutExt$sequentialPart$extension"
+            $newDestPath = [System.IO.Path]::Combine($dirName, $newFileName)
+            if (!(Test-Path $newDestPath)) {
+              $destPath = $newDestPath
+              break
+            }
+            $index++
+          }
+        } else {
+          log "Destination file exists and sequential_format is not configured. Skipping: $($file.FullName)" "Yellow"
+          return # 'return' will skip to the next item in ForEach-Object
+        }
+      }
+
       $destDir = [System.IO.Path]::GetDirectoryName($destPath)
       if (!(Test-Path $destDir)) {
         New-Item -ItemType Directory -Force -Path $destDir | Out-Null
