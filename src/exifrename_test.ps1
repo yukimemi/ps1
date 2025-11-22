@@ -12,14 +12,14 @@ $script_path = Join-Path $script_dir "exifrename.ps1"
 
 $tests = @(
   @{
-    Name = "Happy Path"
+    Name = "Happy Path with Milliseconds"
     Test = {
       $in_dir = Join-Path $base_dir "tmp\in"
       $out_dir = Join-Path $base_dir "tmp\out"
       $cfg = Join-Path $script_dir "exifrename.json"
       $test_img_src = Join-Path $base_dir "tmp\test.jpg"
       $test_img = Join-Path $in_dir "test.jpg"
-      $out_file = Join-Path $out_dir "20251122/20251122_test.jpg"
+      $out_file = Join-Path $out_dir "20251122/20251122_123456789.jpg"
 
       try {
         # Create a dummy jpg file
@@ -27,7 +27,7 @@ $tests = @(
         $bitmap.SetPixel(0, 0, [System.Drawing.Color]::Red)
         $bitmap.Save($test_img_src, [System.Drawing.Imaging.ImageFormat]::Jpeg)
         $bitmap.Dispose()
-        exiftool "-DateTimeOriginal=2025:11:22 12:34:56" -overwrite_original $test_img_src | Out-Null
+        exiftool "-DateTimeOriginal=2025:11:22 12:34:56" "-SubSecTimeOriginal=789" -overwrite_original $test_img_src | Out-Null
 
         New-Item -ItemType Directory -Force -Path $in_dir | Out-Null
         New-Item -ItemType Directory -Force -Path $out_dir | Out-Null
@@ -35,7 +35,7 @@ $tests = @(
 
         & $script_path -in_dir $in_dir -out_dir $out_dir -cfg $cfg
         if (!(Test-Path $out_file)) {
-          throw "Test failed: Output file not found."
+          throw "Test failed: Output file '$out_file' not found."
         }
       } finally {
         if (Test-Path $in_dir) {
@@ -100,14 +100,15 @@ $tests = @(
       $out_dir = Join-Path $base_dir "tmp\out"
       $cfg = Join-Path $script_dir "exifrename.json"
 
-      $thrown = $false
-      try {
-        & $script_path -in_dir $in_dir -out_dir $out_dir -cfg $cfg
-      } catch {
-        $thrown = $true
+      # Ensure the input directory does not exist
+      if (Test-Path $in_dir) {
+        Remove-Item -Recurse -Force $in_dir
       }
-      if (!$thrown) {
-        throw "Test failed: Exception not thrown."
+
+      & $script_path -in_dir $in_dir -out_dir $out_dir -cfg $cfg | Out-Null
+      
+      if ($LASTEXITCODE -eq 0) {
+        throw "Test failed: Script should have returned a non-zero exit code."
       }
     }
   },

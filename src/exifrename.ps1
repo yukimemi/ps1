@@ -160,7 +160,7 @@ function Start-Main {
       $file = $_
       log "Processing $($file.FullName)"
 
-      $exifJson = exiftool -json -d "%Y-%m-%d %H:%M:%S" $file.FullName | ConvertFrom-Json
+      $exifJson = exiftool -json -d "%Y-%m-%d %H:%M:%S.%f" $file.FullName | ConvertFrom-Json
       $dateStr = $exifJson.DateTimeOriginal
       if ([string]::IsNullOrEmpty($dateStr)) {
         $dateStr = $exifJson.CreateDate
@@ -172,6 +172,20 @@ function Start-Main {
       }
 
       $date = Get-Date $dateStr
+
+      # Add milliseconds if SubSecTimeOriginal is available
+      if ($exifJson.SubSecTimeOriginal) {
+        $millisecondsStr = $exifJson.SubSecTimeOriginal.ToString().Trim()
+        if ($millisecondsStr -match "^\d+$") {
+          # Pad with zeros to make it 3 digits, or truncate if longer
+          $millisecondsStr = $millisecondsStr.PadRight(3, '0').Substring(0, 3)
+          [int]$milliseconds = 0
+          if ([int]::TryParse($millisecondsStr, [ref]$milliseconds)) {
+            # DateTime objects are immutable, so we create a new one with updated milliseconds.
+            $date = New-Object DateTime($date.Year, $date.Month, $date.Day, $date.Hour, $date.Minute, $date.Second, $milliseconds)
+          }
+        }
+      }
       $newName = $app.cfg.rename_format
       $newName = $newName.Replace("{yyyymmdd}", $date.ToString("yyyyMMdd"))
       $newName = $newName.Replace("{yyyy}", $date.ToString("yyyy"))
