@@ -12,6 +12,45 @@ $script_path = Join-Path $script_dir "exifrename.ps1"
 
 $tests = @(
   @{
+    Name = "Path with spaces"
+    Test = {
+      $in_dir = Join-Path $base_dir "tmp\in dir with space"
+      $out_dir = Join-Path $base_dir "tmp\out dir with space"
+      $cfg = Join-Path $script_dir "exifrename.json"
+      $test_img_src = Join-Path $base_dir "tmp\test with space.jpg"
+      $test_img = Join-Path $in_dir "test.jpg"
+      $out_file = Join-Path $out_dir "20251122/20251122_123456789.jpg"
+
+      try {
+        # Create a dummy jpg file
+        $bitmap = New-Object System.Drawing.Bitmap(1, 1)
+        $bitmap.SetPixel(0, 0, [System.Drawing.Color]::Red)
+        $bitmap.Save($test_img_src, [System.Drawing.Imaging.ImageFormat]::Jpeg)
+        $bitmap.Dispose()
+        exiftool "-DateTimeOriginal=2025:11:22 12:34:56" "-SubSecTimeOriginal=789" -overwrite_original $test_img_src | Out-Null
+
+        New-Item -ItemType Directory -Force -Path $in_dir | Out-Null
+        New-Item -ItemType Directory -Force -Path $out_dir | Out-Null
+        Copy-Item -Path $test_img_src -Destination $test_img
+
+        & $script_path -in_dir $in_dir -out_dir $out_dir -cfg $cfg
+        if (!(Test-Path $out_file)) {
+          throw "Test failed: Output file '$out_file' not found in path with spaces."
+        }
+      } finally {
+        if (Test-Path $in_dir) {
+          Remove-Item -Recurse -Force $in_dir
+        }
+        if (Test-Path $out_dir) {
+          Remove-Item -Recurse -Force $out_dir
+        }
+        if (Test-Path $test_img_src) {
+          Remove-Item -Force $test_img_src
+        }
+      }
+    }
+  },
+  @{
     Name = "Happy Path with Milliseconds"
     Test = {
       $in_dir = Join-Path $base_dir "tmp\in"

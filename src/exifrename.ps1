@@ -3,7 +3,7 @@
     exifrename.ps1
   .DESCRIPTION
     exiftool の結果を元にリネーム (移動) する
-  .Last Change : 2025/11/23 13:32:11.
+  .Last Change : 2025/11/23 21:15:37.
 #>
 param(
   [Parameter(Mandatory = $true)]
@@ -160,7 +160,13 @@ function Start-Main {
       # Set output encoding to UTF-8 to handle special characters from exiftool
       $originalOutputEncoding = [System.Console]::OutputEncoding
       [System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-      $exifJson = exiftool -json -d "%Y-%m-%d %H:%M:%S.%f" $file.FullName | ConvertFrom-Json
+      $exiftool_args = @(
+        "-json"
+        "-d"
+        "%Y-%m-%d %H:%M:%S.%f"
+        $file.FullName
+      )
+      $exifJson = & exiftool $exiftool_args | ConvertFrom-Json
       [System.Console]::OutputEncoding = $originalOutputEncoding
       $dateStr = $exifJson.DateTimeOriginal
       if ([string]::IsNullOrEmpty($dateStr)) {
