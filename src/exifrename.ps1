@@ -3,7 +3,7 @@
     exifrename.ps1
   .DESCRIPTION
     exiftool の結果を元にリネーム (移動) する
-  .Last Change : 2025/11/23 02:52:43.
+  .Last Change : 2025/11/23 13:32:11.
 #>
 param(
   [Parameter(Mandatory = $true)]
@@ -89,7 +89,7 @@ function Start-Init {
   $app.Add("logName", [System.IO.Path]::GetFileNameWithoutExtension($app.logFile))
   $app.Add("logFileName", [System.IO.Path]::GetFileName($app.logFile))
   New-Item -Force -ItemType Directory $app.logDir | Out-Null
-  Start-Transcript $app.logFile
+  Start-Transcript $app.logFile | Out-Null
 
   # const value.
   $app.Add("cnst", @{
@@ -109,9 +109,6 @@ function Start-Init {
   }
   $json = Get-Content -Encoding utf8 $app.cfgPath | ConvertFrom-Json
   $app.Add("cfg", $json)
-
-  # Init result
-  $app.Add("result", $app.cnst.ERROR)
 
   log "[Start-Init] End"
 }
@@ -160,7 +157,11 @@ function Start-Main {
       $file = $_
       log "Processing $($file.FullName)"
 
+      # Set output encoding to UTF-8 to handle special characters from exiftool
+      $originalOutputEncoding = [System.Console]::OutputEncoding
+      [System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
       $exifJson = exiftool -json -d "%Y-%m-%d %H:%M:%S.%f" $file.FullName | ConvertFrom-Json
+      [System.Console]::OutputEncoding = $originalOutputEncoding
       $dateStr = $exifJson.DateTimeOriginal
       if ([string]::IsNullOrEmpty($dateStr)) {
         $dateStr = $exifJson.CreateDate
@@ -235,19 +236,17 @@ function Start-Main {
       Move-Item -Path $file.FullName -Destination $destPath
     }
 
-    $app.result = $app.cnst.SUCCESS
+    return $app.cnst.SUCCESS
   } catch {
     log "Error ! $($_ | Out-String)" "Red"
-    $app.result = $app.cnst.ERROR
+    return $app.cnst.ERROR
   } finally {
     log "[Start-Main] End"
     if ($app.logFile) {
-      Stop-Transcript
+      Stop-Transcript | Out-Null
     }
   }
-  return $app.result
 }
 
 # Call main.
-$exitCode = Start-Main
-exit $exitCode
+exit Start-Main
