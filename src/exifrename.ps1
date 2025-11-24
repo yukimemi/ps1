@@ -162,6 +162,9 @@ function Start-Main {
       [System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8
       $exiftool_args = @(
         "-json"
+        "-DateTimeOriginal"
+        "-CreateDate"
+        "-SubSecTimeOriginal"
         "-d"
         "%Y-%m-%d %H:%M:%S.%f"
         $file.FullName
