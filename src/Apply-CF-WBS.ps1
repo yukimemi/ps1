@@ -8,97 +8,85 @@ param(
   [string]$WorkbookPath,
   [switch]$UseActive,
   [string]$SheetName       = $null,
-  [string]$BaselineAddress = "R3C6", # $F$3
+  [string]$BaselineAddress = "R3C6",
   [int]$HeaderRow          = 5,
-  [int]$StartCol           = 10,   # J
-  [int]$EndCol             = 65,   # BM
+  [int]$StartCol           = 10,
+  [int]$EndCol             = 65,
   [int]$StartRowBands      = 11,
   [int]$EndRow             = 1000,
   [switch]$SaveChanges
 )
 
 $scriptStartTime = Get-Date
-function Log-Progress {
-  param([string]$message)
-  $elapsed = (Get-Date) - $scriptStartTime
-  Write-Host ("[{0:hh\:mm\:ss}] {1}" -f $elapsed, $message)
-}
+function Log-Progress { param([string]$m) $e = (Get-Date) - $scriptStartTime; Write-Host ("[{0:hh\:mm\:ss}] {1}" -f $e, $m) }
 
 $excel = $null; $wb = $null; $ws = $null; $attached = $false
 $m = [System.Reflection.Missing]::Value
 
 try {
-  Log-Progress "Connecting to Excel..."
+  Log-Progress "Connecting..."
   try { $excel = [Runtime.InteropServices.Marshal]::GetActiveObject("Excel.Application"); $attached = $true } catch { $excel = New-Object -ComObject Excel.Application }
+  $prevStyle = $excel.ReferenceStyle; $excel.ReferenceStyle = -4150
+  $excel.ScreenUpdating = $false; $excel.Calculation = -4135
 
-  Log-Progress "Setting reference style and disabling updates..."
-  $prevStyle = $excel.ReferenceStyle
-  try {
-    $prevCalc = $excel.Calculation
-    $excel.Calculation = -4135 # xlManual
-    $excel.ScreenUpdating = $false
-    $excel.EnableEvents = $false
-    $excel.ReferenceStyle = -4150 # xlR1C1
-  } catch {}
-
-  Log-Progress "Accessing Sheet..."
   if ($WorkbookPath) { $wb = $excel.Workbooks.Open((Resolve-Path $WorkbookPath).Path) } else { $wb = $excel.ActiveWorkbook }
   $ws = if ($SheetName) { $wb.Worksheets.Item($SheetName) } else { $excel.ActiveSheet }
   $sep = $excel.International(5)
 
-  Log-Progress "Cleaning up existing formats..."
+  # --- Define Holiday Name ---
+  Log-Progress "Defining Holiday Range Name..."
+  try {
+    $wsHol = $wb.Worksheets.Item("祝日")
+    $wb.Names.Add("HolidayList", $wsHol.Range("B:B")) | Out-Null # C2 means Column B in R1C1
+  } catch {
+    Log-Progress "Warning: '祝日' sheet not found or could not define name."
+  }
+
+  Log-Progress "Cleanup..."
   $rChart = $ws.Range($ws.Cells($HeaderRow, $StartCol), $ws.Cells($EndRow, $EndCol))
   $rD     = $ws.Range($ws.Cells($StartRowBands, 5), $ws.Cells($EndRow, 5))
   $rR     = $ws.Range($ws.Cells($StartRowBands, 2), $ws.Cells($EndRow, 8))
   foreach ($r in @($rChart, $rD, $rR)) { try { $r.FormatConditions.Delete() } catch {} }
 
-  Log-Progress "Adding rules (Using Selection for Baseline robustness)..."
+  Log-Progress "Adding rules..."
   $idx = "R" + $HeaderRow + "C"
   $rowA = "RC1"; $rowE = "RC5"; $rowF = "RC6"; $rowG = "RC7"
   $isBand = "(" + $rowG + ">=" + $idx + ")*(" + $rowF + "<" + $idx + "+1)"
 
-  # 1. Band rules
-  $fcB = $rChart.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $isBand + ")")
-  $fcB.Interior.ThemeColor = 8
-  foreach ($imp in @(@(3, 13172735), @(2, 11853055), @(1, 7895295))) {
-    $fcI = $rChart.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowA + "=" + $imp[0] + $sep + $isBand + ")")
-    $fcI.Interior.Color = $imp[1]; $fcI.StopIfTrue = $true
+  # 1. Holiday (Using Named Range)
+  $fHol = "=OR(WEEKDAY(" + $idx + $sep + "2)>=6" + $sep + "COUNTIF(HolidayList" + $sep + $idx + ")>0)"
+  $fcHol = $rChart.FormatConditions.Add(2, $m, $fHol)
+  $fcHol.Interior.Color = 16118015
+
+  # 2. Bands
+  $fcBand = $rChart.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $isBand + ")")
+  $fcBand.Interior.ThemeColor = 8
+  $imps = @(@(3, 13172735), @(2, 11853055), @(1, 7895295))
+  foreach ($imp in $imps) {
+    $fImp = "=AND(ROW()>=" + $StartRowBands + $sep + $rowA + "=" + $imp[0] + $sep + $isBand + ")"
+    $fcI = $rChart.FormatConditions.Add(2, $m, $fImp); $fcI.Interior.Color = $imp[1]; $fcI.StopIfTrue = $true
   }
 
-  # 2. Progress
+  # 3. Progress
   $fcP = $rChart.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowF + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowG + "-" + $rowF + "+1)*" + $rowE + $sep + "0)+" + $rowF + "-1>=" + $idx + ")")
   $fcP.Interior.ThemeColor = 1; $fcP.Interior.TintAndShade = -0.35
 
-  # 3. Baseline (Selection Approach)
-  $fBase = "=AND(" + $BaselineAddress + ">=" + $idx + $sep + $BaselineAddress + "<" + $idx + "+1)"
-  $fcBase = $rChart.FormatConditions.Add(2, $m, $fBase)
-  $fcBase.SetFirstPriority()
-  
-  # Index 1 is now the Baseline rule
-  $fc1 = $rChart.FormatConditions.Item(1)
+  # 4. Baseline
+  $fcBase = $rChart.FormatConditions.Add(2, $m, "=AND(" + $BaselineAddress + ">=" + $idx + $sep + $BaselineAddress + "<" + $idx + "+1)")
   try {
-    $fc1.Borders.Item(-4131).LineStyle = 1
-    $fc1.Borders.Item(-4131).Color = 255
-    $fc1.Borders.Item(-4131).TintAndShade = 0
-    $fc1.Borders.Item(-4131).Weight = 2
-  } catch {
-    # If Item(7) fails, try setting border on the whole object
-    Log-Progress "Warning: Selection border failed. Trying fallback background color..."
-    $fc1.Interior.Color = 13551615
-  }
-  $fc1.StopIfTrue = $false
+    $bL = $fcBase.Borders.Item(-4131); $bL.LineStyle = 1; $bL.Color = 255; $bL.Weight = 2
+    foreach ($i in @(-4152, -4160, -4161)) { try { $fcBase.Borders.Item($i).LineStyle = -4142 } catch {} }
+  } catch {}
 
-  # 4. Row Rules
-  $fcRow = $rR.FormatConditions.Add(2, $m, "=AND(" + $rowE + "<1" + $sep + $rowG + "<" + $BaselineAddress + $sep + $rowG + "<>"""")")
-  $fcRow.Interior.Color = 13551615; $fcRow.Font.Bold = $true; $fcRow.Font.Color = 393372
-  $fcDone = $rR.FormatConditions.Add(2, $m, "=" + $rowE + "=1")
-  $fcDone.Interior.Color = 14211288; $fcDone.Font.Color = 10526880
+  # 5. Row Rules
+  $q = [char]34; $fR = "=AND(" + $rowE + "<1" + $sep + $rowG + "<" + $BaselineAddress + $sep + $rowG + "<>" + $q + $q + ")"
+  $fcRow = $rR.FormatConditions.Add(2, $m, $fR); $fcRow.Interior.Color = 13551615; $fcRow.Font.Bold = $true; $fcRow.Font.Color = 393372
+  $fcDone = $rR.FormatConditions.Add(2, $m, "=" + $rowE + "=1"); $fcDone.Interior.Color = 14211288; $fcDone.Font.Color = 10526880
 
-  # Priority Adjustment
-  try { $fcP.SetFirstPriority() } catch {}
-  try { $fc1.SetFirstPriority() } catch {}
+  Log-Progress "Priorities..."
+  try { $fcHol.SetFirstPriority(); $fcBand.SetFirstPriority(); $fcDone.SetFirstPriority(); $fcP.SetFirstPriority(); $fcBase.SetFirstPriority() } catch {}
 
-  # 5. DataBar
+  # 6. DataBar
   $fcBar = $rD.FormatConditions.AddDatabar()
   try { $fcBar.MinPoint.Modify(0, 0); $fcBar.MaxPoint.Modify(0, 1) } catch {}
 
@@ -113,14 +101,12 @@ try {
   }
 
   Log-Progress "Finalizing..."
-  if ($null -ne $prevCalc) { try { $excel.Calculation = $prevCalc } catch {} }
-  try { $excel.ReferenceStyle = $prevStyle; $excel.ScreenUpdating = $true; $excel.EnableEvents = $true } catch {}
+  $excel.Calculation = -4105; $excel.ReferenceStyle = $prevStyle; $excel.ScreenUpdating = $true; $excel.EnableEvents = $true
   if ($SaveChanges) { $wb.Save() }
   Log-Progress "Success."
-
 } catch {
   Log-Progress "Error: $($_.Exception.Message)"
-  if ($null -ne $excel) { try { $excel.Calculation = $prevCalc; $excel.ReferenceStyle = $prevStyle; $excel.ScreenUpdating = $true; $excel.EnableEvents = $true } catch {} }
+  if ($null -ne $excel) { try { $excel.Calculation = -4105; $excel.ReferenceStyle = $prevStyle; $excel.ScreenUpdating = $true } catch {} }
   Write-Error $_.Exception.Message
 } finally {
   foreach ($o in @($ws, $wb, $excel)) { if ($null -ne $o) { [System.Runtime.InteropServices.Marshal]::ReleaseComObject($o) | Out-Null } }
