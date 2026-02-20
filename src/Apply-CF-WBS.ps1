@@ -10,7 +10,7 @@ param(
   [string]$SheetName       = $null,
   [string]$BaselineAddress = "R3C6",
   [int]$HeaderRow          = 5,
-  [int]$StartCol           = 10,
+  [int]$StartCol           = 12,
   [int]$EndCol             = 79,
   [int]$StartRowBands      = 11,
   [int]$EndRow             = 1000,
@@ -78,7 +78,7 @@ try {
   $rChartFull = $ws.Range($ws.Cells($HeaderRow, $StartCol), $ws.Cells($EndRow, $EndCol))
   $rChartData = $ws.Range($ws.Cells(7, $StartCol), $ws.Cells($EndRow, $EndCol)) # Applying from Row 7
   $rD         = $ws.Range($ws.Cells($StartRowBands, 5), $ws.Cells($EndRow, 5))
-  $rR         = $ws.Range($ws.Cells($StartRowBands, 2), $ws.Cells($EndRow, 8))
+  $rR         = $ws.Range($ws.Cells($StartRowBands, 2), $ws.Cells($EndRow, 10))
 
   [void]$ws.Cells.FormatConditions.Delete()
 
