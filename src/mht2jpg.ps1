@@ -7,7 +7,7 @@
     - path: psr zip path
   .OUTPUTS
     - 0: SUCCESS / 1: ERROR
-  .Last Change : 2021/04/28 16:45:18.
+  .Last Change : 2026/02/19 09:34:46.
 #>
 param(
   [Parameter()]
@@ -33,7 +33,8 @@ $imagePart = $false
 $base64 = ""
 
 switch -regex -file $path {
-  '^$' {}
+  '^$' {
+  }
 
   $nameRE {
     $name = $nameRE.Match($_).Groups['Name'].Value
