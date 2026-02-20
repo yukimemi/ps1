@@ -88,11 +88,12 @@ try {
   $rowE = "RC5"
   $rowF = "RC6"
   $rowG = "RC7"
+  $rowH = "RC8"
   $isBand = "(" + $rowG + ">=" + $idx + ")*(" + $rowF + "<" + $idx + "+1)"
   $q = [char]34
 
   # 3. Progress
-  $fcP = $rChartFull.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowF + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowG + "-" + $rowF + "+1)*" + $rowE + $sep + "0)+" + $rowF + "-1>=" + $idx + ")")
+  $fcP = $rChartFull.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowH + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowG + "-" + $rowF + "+1)*" + $rowE + $sep + "0)+" + $rowH + "-1>=" + $idx + ")")
   $fcP.Interior.ThemeColor = 1
   $fcP.Interior.TintAndShade = -0.35
 
