@@ -89,13 +89,18 @@ try {
   $rowF = "RC6"
   $rowG = "RC7"
   $rowH = "RC8"
+  $rowI = "RC9"
   $isBand = "(" + $rowG + ">=" + $idx + ")*(" + $rowF + "<" + $idx + "+1)"
   $q = [char]34
 
-  # 3. Progress
-  $fcP = $rChartFull.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowH + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowG + "-" + $rowF + "+1)*" + $rowE + $sep + "0)+" + $rowH + "-1>=" + $idx + ")")
-  $fcP.Interior.ThemeColor = 1
-  $fcP.Interior.TintAndShade = -0.35
+  # 3. Progress actual
+  $fcP1 = $rChartFull.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowH + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowI + "-" + $rowH + "+1)*" + $rowE + $sep + "0)+" + $rowH + "-1>=" + $idx + ")")
+  $fcP1.Interior.ThemeColor = 1
+  $fcP1.Interior.TintAndShade = -0.35
+  # 3. Progress plan
+  $fcP2 = $rChartFull.FormatConditions.Add(2, $m, "=AND(ROW()>=" + $StartRowBands + $sep + $rowF + "<=" + $idx + $sep + "ROUNDDOWN((" + $rowG + "-" + $rowF + "+1)*" + $rowE + $sep + "0)+" + $rowF + "-1>=" + $idx + ")")
+  $fcP2.Interior.ThemeColor = 1
+  $fcP2.Interior.TintAndShade = -0.35
 
   # 2. Bands (Apply to full chart, but with row filter)
   $imps = @(
